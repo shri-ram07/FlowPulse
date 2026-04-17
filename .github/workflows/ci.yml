@@ -31,7 +31,7 @@ jobs:
         run: pytest backend/tests -q
       - name: Upload coverage
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-report
           path: .coverage
@@ -117,7 +117,7 @@ jobs:
           format: spdx-json
           output-file: docs/SBOM-backend.spdx.json
       - name: Upload SBOM
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sbom
           path: docs/SBOM-backend.spdx.json
