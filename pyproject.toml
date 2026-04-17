@@ -1,0 +1,69 @@
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = ["."]
+testpaths = ["backend/tests"]
+filterwarnings = [
+    "ignore::DeprecationWarning:google",
+    "ignore::UserWarning:google",
+]
+addopts = "--cov=backend --cov-report=term-missing --cov-fail-under=75"
+
+[tool.coverage.run]
+source = ["backend"]
+omit = [
+    "backend/tests/*",
+    "backend/observability/*",       # exercised only in live GCP env
+    "backend/agents/adk_runtime.py", # live ADK path requires API key
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == \"__main__\":",
+]
+show_missing = true
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # bugbear
+    "UP",  # pyupgrade
+    "S",   # bandit (security)
+    "SIM", # simplify
+    "RUF", # ruff-specific
+]
+ignore = [
+    "E501",   # line too long — handled by formatter
+    "B008",   # FastAPI Depends() as default arg is idiomatic
+    "S101",   # asserts are fine in tests
+    "RUF001", # en-dashes in prose are intentional (docstrings / prompts)
+    "RUF002",
+    "RUF012", # ClassVar annotations for obvious class dicts add noise
+]
+
+[tool.ruff.lint.per-file-ignores]
+"backend/tests/*" = ["S101", "S105", "S106"]  # asserts, hardcoded test passwords
+"backend/security/auth.py" = ["S105", "S106"]  # DEMO passwords are documented as demo-only
+"backend/sim/simulator.py" = ["S311"]          # stdlib random is fine for a simulator
+
+[tool.mypy]
+python_version = "3.11"
+strict_optional = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = true
+disallow_untyped_defs = false   # pragmatic — tests + agents are fine without
+check_untyped_defs = true
+ignore_missing_imports = true   # google.adk / google.genai ship no py.typed
+
+[[tool.mypy.overrides]]
+module = "backend.tests.*"
+disallow_untyped_defs = false
