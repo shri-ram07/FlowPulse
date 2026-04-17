@@ -17,6 +17,7 @@ export default function WelcomePage() {
             <Link href="/map" className="btn">Open Live Map</Link>
             <Link href="/chat" className="btn secondary">Try the Concierge</Link>
             <Link href="/ops" className="btn ghost">Ops Console</Link>
+            <Link href="/hi" className="btn ghost" lang="hi" hrefLang="hi">हिन्दी</Link>
           </div>
         </div>
         <div aria-hidden style={{ fontSize: 88, lineHeight: 1 }}>🏟️</div>

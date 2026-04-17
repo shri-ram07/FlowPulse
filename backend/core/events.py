@@ -11,12 +11,14 @@ from collections import defaultdict
 from collections.abc import AsyncIterator
 from typing import Any
 
+_Event = dict[str, Any]
+
 
 class EventBus:
     def __init__(self) -> None:
-        self._subscribers: dict[str, set[asyncio.Queue]] = defaultdict(set)
+        self._subscribers: dict[str, set[asyncio.Queue[_Event]]] = defaultdict(set)
 
-    async def publish(self, channel: str, payload: dict[str, Any]) -> None:
+    async def publish(self, channel: str, payload: _Event) -> None:
         for q in list(self._subscribers.get(channel, ())):
             # Non-blocking: drop the oldest if a slow consumer is backing up.
             if q.full():
@@ -24,8 +26,8 @@ class EventBus:
                     q.get_nowait()
             await q.put(payload)
 
-    async def subscribe(self, channel: str) -> AsyncIterator[dict[str, Any]]:
-        q: asyncio.Queue = asyncio.Queue(maxsize=64)
+    async def subscribe(self, channel: str) -> AsyncIterator[_Event]:
+        q: asyncio.Queue[_Event] = asyncio.Queue(maxsize=64)
         self._subscribers[channel].add(q)
         try:
             while True:

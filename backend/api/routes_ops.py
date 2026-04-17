@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 from backend.agents import tools
 from backend.api.routes_fcm import PushPayload
 from backend.api.routes_fcm import push as fcm_push
-from backend.core.logging import log
+from backend.core.logging import audit, log
 from backend.security.auth import StaffToken, rate_limit, require_staff
 
 router = APIRouter(prefix="/api/ops", tags=["ops"])
@@ -130,5 +130,8 @@ async def apply_action(p: ApplyAction, user: StaffToken = Depends(require_staff)
     # with user-facing keys renamed.
     log_ctx = {f"act_{k}" if k in ("message", "args") else k: v for k, v in result.items()}
     log.info("ops.apply", extra=log_ctx)
+    # Audit trail for every privileged write — queryable via auditEvent=true.
+    audit("ops.apply", actor=user.sub, action=p.type, target=p.target,
+          action_id=action_id)
     result["ok"] = True
     return result

@@ -24,7 +24,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from backend.core.logging import log
+from backend.core.logging import audit, log
 from backend.security.auth import StaffToken, rate_limit, require_staff
 
 router = APIRouter(prefix="/api/fcm", tags=["fcm"])
@@ -73,6 +73,8 @@ async def push(p: PushPayload, _user: StaffToken = Depends(require_staff)) -> di
     if not project or creds is None:
         msg_id = f"dryrun-{uuid.uuid4()}"
         log.info("fcm.dryrun", extra={"topic": topic, "title": p.title, "msg_id": msg_id})
+        audit("fcm.push", actor=_user.sub, action="push_dry_run", target=topic,
+              msg_id=msg_id)
         return {"ok": True, "dry_run": True, "message_id": msg_id, "topic": topic,
                 "reason": "missing_project" if not project else "missing_credentials"}
 
@@ -100,6 +102,10 @@ async def push(p: PushPayload, _user: StaffToken = Depends(require_staff)) -> di
 
     if r.status_code >= 400:
         log.warning("fcm.rejected", extra={"topic": topic, "status": r.status_code})
+        audit("fcm.push", actor=_user.sub, action="push", target=topic,
+              result=f"rejected_{r.status_code}")
         raise HTTPException(502, f"fcm_rejected: {r.status_code}")
     j = r.json()
+    audit("fcm.push", actor=_user.sub, action="push", target=topic,
+          message_id=j.get("name"))
     return {"ok": True, "dry_run": False, "message_id": j.get("name"), "topic": topic}

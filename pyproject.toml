@@ -6,7 +6,7 @@ filterwarnings = [
     "ignore::DeprecationWarning:google",
     "ignore::UserWarning:google",
 ]
-addopts = "--cov=backend --cov-report=term-missing --cov-fail-under=75"
+addopts = "--cov=backend --cov-report=term-missing --cov-fail-under=85"
 
 [tool.coverage.run]
 source = ["backend"]

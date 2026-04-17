@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { fetchGraph } from "@/lib/api";
+import { useReducedMotion } from "@/hooks/useAccessibleMode";
 import { KIND_ICON, edgeFlow, pressureScale, scoreColor } from "@/lib/scoring";
 import type { Graph, ZoneKind, ZoneState } from "@/lib/types";
 
@@ -36,6 +37,7 @@ export default function StadiumMap({
   youAreHereId?: string;
 }) {
   const [graph, setGraph] = useState<Graph | null>(null);
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
     fetchGraph().then(setGraph).catch(() => { /* fail silently */ });
@@ -48,7 +50,18 @@ export default function StadiumMap({
 
   return (
     <svg viewBox="0 0 1000 1000" role="img"
-         aria-label="Live stadium map. Zones are coloured by Flow Score: green (80+) healthy, amber (50–79) watch, red (<50) action. Thin dashed lines show pedestrian paths between zones; animated dots represent people flowing along those paths.">
+         aria-labelledby="stadium-title" aria-describedby="stadium-desc">
+      <title id="stadium-title">Live stadium map</title>
+      <desc id="stadium-desc">
+        A top-down schematic of the stadium. Each zone is a coloured badge whose
+        fill indicates the current Crowd Flow Score: green (80 or higher) means
+        healthy, amber (50 to 79) means watch, red (below 50) means action
+        required. Size grows with occupancy. Thin dashed lines show pedestrian
+        paths between neighbouring zones; animated dots represent people
+        flowing along those paths — blue for gentle flow, amber for moderate,
+        red for heavy. A pulsing outline marks any zone at a critical level.
+        The pitch in the centre is green with a halfway line and centre circle.
+      </desc>
       <defs>
         <radialGradient id="bowl" cx="50%" cy="50%" r="60%">
           <stop offset="0%" stopColor="#eef2f7" />
@@ -103,8 +116,8 @@ export default function StadiumMap({
         );
       })}
 
-      {/* ---- Flow particles ---- */}
-      {graph?.edges.map((e, i) => {
+      {/* ---- Flow particles (skipped in reduced-motion / Accessible Mode) ---- */}
+      {!reducedMotion && graph?.edges.map((e, i) => {
         const za = byId[e.from]; const zb = byId[e.to];
         const a = nodePos[e.from]; const b = nodePos[e.to];
         if (!a || !b) return null;
@@ -142,7 +155,9 @@ export default function StadiumMap({
         return (
           <g aria-label="Your current location" style={{ pointerEvents: "none" }}>
             <circle cx={p.x} cy={p.y - 40} r={10} fill="#0284c7" stroke="#fff" strokeWidth={2}>
-              <animate attributeName="r" values="10;13;10" dur="1.8s" repeatCount="indefinite" />
+              {!reducedMotion && (
+                <animate attributeName="r" values="10;13;10" dur="1.8s" repeatCount="indefinite" />
+              )}
             </circle>
             <text x={p.x} y={p.y - 36} textAnchor="middle" fill="#fff" fontSize={11} fontWeight={700}>
               YOU
@@ -162,7 +177,7 @@ export default function StadiumMap({
         const selected = selectedId === z.id;
         const x = z.x - w / 2;
         const y = z.y - h / 2;
-        const pulse = z.level === "critical";
+        const pulse = z.level === "critical" && !reducedMotion;
         const isExit = z.kind === "exit";
         const icon = KIND_ICON[z.kind] ?? "\u25CF";
 

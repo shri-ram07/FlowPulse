@@ -41,7 +41,9 @@ class CrowdFlowEngine:
         self.alerts: list[Alert] = []
         self._recent_risk_since: dict[str, float] = {}
         # Hash of fields that matter for UI; used to compute per-tick diffs.
-        self._last_broadcast: dict[str, tuple] = {}
+        self._last_broadcast: dict[str, tuple[Any, ...]] = {}
+        # Observability sink throttling — at most once every 10 s.
+        self._last_obs_emit: float = 0.0
 
     # ---- mutations ----------------------------------------------------
     async def enter(self, zone_id: str, n: int = 1) -> None:
@@ -90,21 +92,52 @@ class CrowdFlowEngine:
             payload = self._snapshot_payload(new_alerts)
 
         await bus.publish("flowpulse:events", payload)
+
+        # Observability fan-out (Cloud Monitoring + BigQuery). Throttled to
+        # ~6x per minute so we stay comfortably under free-tier quotas.
+        if now - self._last_obs_emit >= 10.0:
+            self._last_obs_emit = now
+            self._emit_obs(payload)
+
         return payload
 
+    def _emit_obs(self, payload: dict[str, Any]) -> None:
+        """Write Cloud Monitoring points + stream BigQuery rows for this tick.
+
+        Env-flagged; a missing `GOOGLE_CLOUD_PROJECT` makes both calls no-op.
+        Failures never interrupt the main tick loop.
+        """
+        try:
+            from backend.observability.bigquery import stream_tick_rows
+            from backend.observability.metrics import write_tick_metric
+
+            zones = payload.get("zones") or [self._zone_state(z) for z in self.zones.values()]
+            total = len(zones)
+            avg_score = (sum(z["score"] for z in zones) / total) if total else 0.0
+            critical = sum(1 for z in zones if z["level"] == "critical")
+            congested = sum(1 for z in zones if z["level"] == "congested")
+            write_tick_metric(avg_score=avg_score, critical=critical,
+                              congested=congested, zones=total)
+            stream_tick_rows(zones)
+        except Exception as e:  # pragma: no cover — defensive
+            # Observability is best-effort; never propagate into the tick loop.
+            import logging
+            logging.getLogger("flowpulse.engine").debug(
+                "obs.emit_failed", extra={"err": str(e)[:240]})
+
     # ---- snapshots ---------------------------------------------------
-    def snapshot(self, zone_id: str) -> dict:
+    def snapshot(self, zone_id: str) -> dict[str, Any]:
         z = self._require(zone_id)
         return self._zone_state(z)
 
-    def snapshot_all(self, kind: str | None = None) -> list[dict]:
+    def snapshot_all(self, kind: str | None = None) -> list[dict[str, Any]]:
         return [
             self._zone_state(z)
             for z in self.zones.values()
             if kind is None or z.kind == kind
         ]
 
-    def _zone_state(self, z: Zone) -> dict:
+    def _zone_state(self, z: Zone) -> dict[str, Any]:
         return {
             "id": z.id,
             "name": z.name,
@@ -122,12 +155,12 @@ class CrowdFlowEngine:
             "y": z.y,
         }
 
-    def _snapshot_payload(self, new_alerts: list[Alert], *, full: bool = False) -> dict:
+    def _snapshot_payload(self, new_alerts: list[Alert], *, full: bool = False) -> dict[str, Any]:
         """Build a tick payload. In diff mode, only include zones whose UI-facing
         fields actually changed since the last broadcast — this collapses most
         steady-state payloads to <200 bytes (vs ~3 KB for a full snapshot).
         """
-        changed: list[dict] = []
+        changed: list[dict[str, Any]] = []
         for z in self.zones.values():
             state = self._zone_state(z)
             # Hash the fields that actually matter to the UI.
@@ -144,12 +177,12 @@ class CrowdFlowEngine:
             "alerts": [asdict(a) for a in new_alerts],
         }
 
-    def full_snapshot_payload(self) -> dict:
+    def full_snapshot_payload(self) -> dict[str, Any]:
         """Used by the WebSocket handler on first connect to send a complete state."""
         return self._snapshot_payload([], full=True)
 
     # ---- forecasting helpers -----------------------------------------
-    def forecast(self, zone_id: str, horizon_minutes: int = 2) -> dict:
+    def forecast(self, zone_id: str, horizon_minutes: int = 2) -> dict[str, Any]:
         z = self._require(zone_id)
         f = forecast(z, horizon_minutes)
         return {

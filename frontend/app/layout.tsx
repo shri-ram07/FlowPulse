@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
+import AccessibleModeToggle from "@/components/AccessibleModeToggle";
 import NavLinks from "@/components/NavLinks";
 import { ToastProvider } from "@/components/Toast";
 import "./globals.css";
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <span className="tagline" aria-hidden>Sense · Decide · Influence · Optimize</span>
           <div className="spacer" />
           <NavLinks />
+          <AccessibleModeToggle />
         </nav>
         <ToastProvider>
           <div id="main">{children}</div>

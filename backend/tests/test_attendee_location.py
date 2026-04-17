@@ -17,7 +17,8 @@ def test_contextual_message_with_location_uses_zone_name():
     # Should include both the id (for tool calls) and the human name (for clarity).
     assert "food_1" in msg
     assert "Food Court 1" in msg
-    assert "get_best_route" in msg  # prompt nudges the model toward routing
+    # Prompt nudges the model toward the routing sub-agent.
+    assert "routing_sub_agent" in msg
     assert "quick snack" in msg
 
 
@@ -32,9 +33,12 @@ async def test_attendee_fallback_includes_walking_time_when_location_set():
     # Fallback path is the one hit in tests (no GOOGLE_API_KEY).
     out = await ask_attendee("quick snack", location="gate_a")
     assert out["engine"] == "fallback"
-    # A get_best_route call must be present when location is provided.
+    # The Concierge now delegates to routing_sub_agent which internally
+    # calls get_best_route; the chip surfaces the sub-agent name.
     names = [c["name"] for c in out["tool_calls"]]
-    assert "get_best_route" in names
+    assert "routing_sub_agent" in names
+    # Walking time string should appear in the reply when location is provided.
+    assert "min walk" in out["reply"]
 
 
 @pytest.mark.asyncio

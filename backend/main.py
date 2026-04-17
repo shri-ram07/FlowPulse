@@ -5,10 +5,12 @@ Entry point: `uvicorn backend.main:app --reload --port 8000`.
 from __future__ import annotations
 
 import asyncio
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 
 from backend.api import (
     routes_agent,
@@ -62,9 +64,19 @@ app = FastAPI(
 )
 
 app.add_middleware(SecurityHeadersMiddleware)
+# Compress any response body >500 B. Cuts /api/zones/graph ~75%.
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
+# CORS origins — allow-listed. Set FLOWPULSE_CORS_ORIGINS in Cloud Run to a
+# comma-separated list of your deployed frontend URLs.
+_default_cors = "http://localhost:3000,http://127.0.0.1:3000"
+_cors_origins = [
+    o.strip() for o in os.environ.get("FLOWPULSE_CORS_ORIGINS", _default_cors).split(",")
+    if o.strip()
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST"],
     allow_headers=["Authorization", "Content-Type"],

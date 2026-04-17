@@ -26,7 +26,9 @@ def _sa_project() -> str | None:
     if not path or not pathlib.Path(path).exists():
         return None
     try:
-        return json.loads(pathlib.Path(path).read_text()).get("project_id")
+        data: dict[str, Any] = json.loads(pathlib.Path(path).read_text())
+        project_id = data.get("project_id")
+        return str(project_id) if project_id is not None else None
     except Exception:
         return None
 
@@ -58,8 +60,8 @@ def configure_tracing(service_name: str = "flowpulse") -> Any:
 
     if should_export:
         try:  # pragma: no cover — requires google-cloud-trace
-            from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter  # type: ignore
-            exporter = CloudTraceSpanExporter(project_id=project)
+            from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
+            exporter: Any = CloudTraceSpanExporter(project_id=project)  # type: ignore[no-untyped-call]
             provider.add_span_processor(BatchSpanProcessor(exporter))
             log.info("tracing.cloud_trace", extra={"project": project})
         except Exception as e:
@@ -82,7 +84,7 @@ def configure_tracing(service_name: str = "flowpulse") -> Any:
 
 
 class _NoopTracer:
-    def start_as_current_span(self, _name: str, **_: Any):  # type: ignore[no-untyped-def]
+    def start_as_current_span(self, _name: str, **_: Any) -> Any:
         from contextlib import nullcontext
         return nullcontext()
 
@@ -98,7 +100,7 @@ class _RateLimitAndStripStack(logging.Filter):
         super().__init__()
         self._seen: dict[str, float] = {}
 
-    def filter(self, record: logging.LogRecord) -> bool:  # type: ignore[override]
+    def filter(self, record: logging.LogRecord) -> bool:
         import time
         now = time.monotonic()
         key = record.getMessage()

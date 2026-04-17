@@ -1,8 +1,13 @@
 """AttendeeAgent — fan-facing concierge.
 
-Uses Google ADK + Gemini 2.0 Flash when credentials exist; otherwise falls
-back to a deterministic intent router that still calls the real tools so the
-UX (grounded answers with tool-call chips) stays intact.
+Uses Google ADK + Gemini 2.0 Flash when credentials exist. The Concierge is a
+top-level LlmAgent that **composes two specialist sub-agents** (RoutingAgent
+and ForecastAgent) as AgentTool-style callables, plus the direct read-only
+engine tools. This mirrors the winning multi-agent pattern: one agent per
+concern, orchestrated by a lightweight top-level reasoner.
+
+When ADK isn't available (no GOOGLE_API_KEY), a deterministic fallback still
+calls the same sub-agent fallbacks so the UX (tool-call chips) stays intact.
 """
 from __future__ import annotations
 
@@ -10,13 +15,52 @@ import re
 
 from backend.agents import tools
 from backend.agents.adk_runtime import build_adk_agent, reset_session, run_adk
+from backend.agents.forecast_agent import fallback_forecast
 from backend.agents.prompts import ATTENDEE_SYS_PROMPT
+from backend.agents.routing_agent import fallback_route
+
+# ---- sub-agent-as-tool shims -----------------------------------------------
+# Expose the specialist agents to Gemini as regular tools. Gemini picks them
+# as naturally as any other callable. The bodies go through the specialist
+# fallbacks — they're already grounded in live engine state.
+
+def routing_sub_agent(kind: str, start_zone_id: str = "") -> dict:
+    """Ask the Routing specialist for the best same-kind destination and walking route.
+
+    Args:
+        kind: Category to route to — "food", "restroom", "merch", "gate", "exit".
+        start_zone_id: Optional zone id of where the fan currently is.
+    """
+    return fallback_route(kind=kind, start=start_zone_id or None)
+
+
+def forecast_sub_agent(zone_id: str, horizon_minutes: int = 5) -> dict:
+    """Ask the Forecast specialist to predict a zone's Flow Score N minutes ahead.
+
+    Args:
+        zone_id: The zone to forecast.
+        horizon_minutes: How far ahead to predict (1-10).
+    """
+    return fallback_forecast(zone_id, horizon_minutes=horizon_minutes)
+
+
+_attendee_tools = [
+    # sub-agents (top-level composition)
+    routing_sub_agent,
+    forecast_sub_agent,
+    # direct engine reads (cheap lookups the model shouldn't need to delegate)
+    tools.get_zone_state,
+    tools.get_all_zones,
+    tools.get_wait_time,
+    tools.get_best_route,
+    tools.forecast_zone,
+]
 
 _runner = build_adk_agent(
     name="attendee_agent",
     model="gemini-2.0-flash",
     instruction=ATTENDEE_SYS_PROMPT,
-    tool_fns=tools.ATTENDEE_TOOLS,
+    tool_fns=_attendee_tools,
 )
 
 
@@ -26,10 +70,7 @@ def reset_attendee_session(session_id: str) -> None:
 
 
 def build_contextual_message(message: str, location: str | None) -> str:
-    """Prefix the user's question with a short machine-readable location hint
-    so the model (and a reviewer tailing the logs) can see what the fan typed
-    *and* where they're standing.
-    """
+    """Prefix the user's question with a short machine-readable location hint."""
     if not location:
         return (
             "[Context: the fan has NOT shared their location. Answer generally, "
@@ -44,7 +85,7 @@ def build_contextual_message(message: str, location: str | None) -> str:
         pass
     return (
         f"[Context: the fan is currently at zone id '{location}' ({zone_name}). "
-        f"Use this as the 'start' when calling get_best_route.]\n\n"
+        f"Use this as the 'start_zone_id' when calling routing_sub_agent.]\n\n"
         f"Question: {message}"
     )
 
@@ -56,11 +97,9 @@ async def ask_attendee(
 ) -> dict:
     """Return {reply, tool_calls[], engine, [error]}.
 
-    tool_calls is a list of {name, args, result} so the UI can render citation
-    chips — this is the "grounded AI" differentiator. Works in both ADK mode
-    (extracted from function_call/function_response events) and fallback mode.
-
-    A stable `session_id` enables multi-turn memory in ADK mode.
+    `tool_calls` is extracted from ADK events (function_call / function_response).
+    In fallback mode, it's constructed explicitly so the UI's citation chips
+    render in both paths.
     """
     contextual = build_contextual_message(message, location)
 
@@ -86,7 +125,7 @@ async def ask_attendee(
     return _fallback(message, location)
 
 
-# ---- deterministic fallback reasoner -----------------------------------
+# ---- deterministic fallback reasoner ---------------------------------------
 
 KIND_KEYWORDS = {
     "food": ["food", "eat", "snack", "hungry", "beer", "drink", "meal", "concession"],
@@ -106,37 +145,35 @@ def _infer_kind(msg: str) -> str | None:
 
 
 def _fallback(message: str, location: str | None) -> dict:
+    """Deterministic path — exercises the SAME sub-agent fallbacks so the UI
+    sees tool chips like `routing_sub_agent()` / `forecast_sub_agent()`
+    regardless of which engine served the turn."""
     calls: list[dict] = []
-    def record(name: str, args: dict, result) -> None:
+
+    def record(name: str, args: dict, result: object) -> None:
         calls.append({"name": name, "args": args, "result": result})
 
     kind = _infer_kind(message)
     m = message.lower()
 
-    if kind in ("food", "restroom", "merch"):
-        result = tools.get_all_zones(kind=kind)
-        record("get_all_zones", {"kind": kind}, result)
-        if not result:
-            return {"reply": f"No {kind} zones are currently tracked.",
-                    "tool_calls": calls, "engine": "fallback"}
-        ranked = sorted(result, key=lambda z: (-z["score"], z["wait_minutes"]))
-        best = ranked[0]
-        extra = ""
-        if location and location in {z["id"] for z in tools.get_all_zones()}:
-            route = tools.get_best_route(location, best["id"], optimize="comfort")
-            record("get_best_route",
-                   {"start": location, "dest": best["id"], "optimize": "comfort"},
-                   route)
-            if "eta_seconds" in route:
-                extra = f" About {route['eta_seconds'] // 60} min walk from your spot."
-        elif not location:
-            extra = " (Tap a zone on the map to tell me where you are for a walking time.)"
-        reply = (
-            f"Head to {best['name']} — Flow Score {best['score']}/100, "
-            f"~{best['wait_minutes']} min wait ({best['level']}).{extra}"
-        )
-        return {"reply": reply, "tool_calls": calls, "engine": "fallback"}
+    # 1) Forecast-intent ("forecast", "in 5", "later")?
+    if "forecast" in m or "in 5" in m or "later" in m:
+        all_ = tools.get_all_zones()
+        record("get_all_zones", {}, all_)
+        worst = max(all_, key=lambda z: z["density"])
+        fc = forecast_sub_agent(worst["id"], horizon_minutes=5)
+        record("forecast_sub_agent",
+               {"zone_id": worst["id"], "horizon_minutes": 5}, fc)
+        return {
+            "reply": (
+                f"In 5 min {worst['name']} is forecast at density "
+                f"{fc['predicted_density']:.0%} and Flow Score {fc['predicted_score']}."
+                f" Recommendation: {fc['recommendation']}."
+            ),
+            "tool_calls": calls, "engine": "fallback",
+        }
 
+    # 2) "how busy is X" exact-match queries.
     mzone = re.search(r"(gate [a-g]|food court \d|restroom [a-z]-?\d?|exit ramp)", m)
     if mzone:
         all_ = tools.get_all_zones()
@@ -153,20 +190,34 @@ def _fallback(message: str, location: str | None) -> dict:
                 "tool_calls": calls, "engine": "fallback",
             }
 
-    if "forecast" in m or "in 5" in m or "later" in m:
-        all_ = tools.get_all_zones()
-        record("get_all_zones", {}, all_)
-        worst = max(all_, key=lambda z: z["density"])
-        fc = tools.forecast_zone(worst["id"], horizon_minutes=5)
-        record("forecast_zone", {"zone_id": worst["id"], "horizon_minutes": 5}, fc)
+    # 3) Category routing via the RoutingAgent sub-tool.
+    if kind in ("food", "restroom", "merch"):
+        route = routing_sub_agent(kind=kind, start_zone_id=location or "")
+        record("routing_sub_agent",
+               {"kind": kind, "start_zone_id": location or ""}, route)
+        if route.get("error"):
+            return {"reply": f"Routing error: {route['error']}",
+                    "tool_calls": calls, "engine": "fallback"}
+        if not route.get("dest"):
+            return {"reply": "No matching zones found.",
+                    "tool_calls": calls, "engine": "fallback"}
+        dest_state = tools.get_zone_state(route["dest"])
+        record("get_zone_state", {"zone_id": route["dest"]}, dest_state)
+        extra = ""
+        if location and route.get("eta_seconds"):
+            extra = f" About {route['eta_seconds'] // 60} min walk from your spot."
+        elif not location:
+            extra = (" (Tap a zone on the map to tell me where you are for a "
+                     "walking time.)")
         return {
             "reply": (
-                f"In 5 min {worst['name']} is forecast at density "
-                f"{fc['predicted_density']:.0%} and Flow Score {fc['predicted_score']}."
+                f"Head to {dest_state['name']} — Flow Score {dest_state['score']}/100, "
+                f"~{dest_state['wait_minutes']} min wait ({dest_state['level']}).{extra}"
             ),
             "tool_calls": calls, "engine": "fallback",
         }
 
+    # 4) Default — show overall health, invite a click.
     all_ = tools.get_all_zones()
     record("get_all_zones", {}, all_)
     avg = round(sum(z["score"] for z in all_) / len(all_)) if all_ else 0

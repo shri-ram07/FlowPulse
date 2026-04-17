@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import heapq
-from typing import Literal
+from typing import Any, Literal
 
 from .zone import Zone
 
@@ -14,7 +14,7 @@ def best_route(
     start: str,
     dest: str,
     mode: RouteMode = "time",
-) -> dict:
+) -> dict[str, Any]:
     """Return {path, eta_seconds, score_avg} or {"error": ...}.
 
     - mode="time": edge = walk_seconds only.
@@ -47,7 +47,7 @@ def best_route(
             v = edge.to
             if v not in zones:
                 continue
-            w = edge.walk_seconds
+            w: float = float(edge.walk_seconds)
             if mode == "comfort":
                 w = w * (1.0 + penalty(zones[v]))
             nd = d_u + w

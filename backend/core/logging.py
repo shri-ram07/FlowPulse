@@ -74,3 +74,28 @@ def configure_logging() -> None:
 
 
 log = logging.getLogger("flowpulse")
+_audit = logging.getLogger("flowpulse.audit")
+
+
+def audit(event: str, *, actor: str = "anonymous", action: str, target: str = "",
+          result: str = "ok", **extra: Any) -> None:
+    """Emit a structured audit-log entry for a privileged action.
+
+    Always goes via the root handler (which is our Cloud Logging JSON formatter),
+    so these lines appear in Logs Explorer with a queryable `auditEvent=true`
+    label and a dedicated logger name.
+
+    Standardised fields: actor, action, target, result.
+    Extra keyword args are merged into `context` by the formatter.
+    """
+    _audit.info(
+        event,
+        extra={
+            "auditEvent": True,
+            "actor": actor,
+            "action": action,
+            "target": target,
+            "result": result,
+            **extra,
+        },
+    )

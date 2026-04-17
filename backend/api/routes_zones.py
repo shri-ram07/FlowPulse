@@ -1,9 +1,12 @@
 """Read-only zone APIs for the attendee PWA + staff console."""
 from __future__ import annotations
 
+import hashlib
+import json
 from functools import lru_cache
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response
+from starlette.responses import Response as StarletteResponse
 
 from backend.agents import tools
 from backend.security.auth import rate_limit
@@ -36,14 +39,31 @@ def _graph_payload() -> dict:
     return {"nodes": nodes, "edges": edges}
 
 
+@lru_cache(maxsize=1)
+def _graph_etag() -> str:
+    """Strong ETag derived from the graph payload bytes — stable across restarts
+    as long as the zone configuration is unchanged."""
+    body = json.dumps(_graph_payload(), sort_keys=True).encode()
+    return '"' + hashlib.sha256(body).hexdigest()[:16] + '"'
+
+
 @router.get("/graph", dependencies=[Depends(rate_limit(60))])
-async def zone_graph(response: Response) -> dict:
+async def zone_graph(
+    response: Response,
+    if_none_match: str | None = Header(default=None),
+):
     """Static graph of the venue — nodes (with coords) and edges (walk_seconds).
 
     Fetched once on page load so the frontend can draw paths + flow animation.
-    Cached server-side (lru_cache) and client-side (Cache-Control: 1 hour).
+    Cached server-side (lru_cache), client-side (Cache-Control: 1 hour), and
+    revalidated via ETag → 304 Not Modified when the client already has it.
     """
+    etag = _graph_etag()
+    if if_none_match == etag:
+        # 304 saves the full payload transfer on reloads.
+        return StarletteResponse(status_code=304, headers={"ETag": etag})
     response.headers["Cache-Control"] = "public, max-age=3600"
+    response.headers["ETag"] = etag
     return _graph_payload()
 
 

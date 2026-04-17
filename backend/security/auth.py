@@ -11,7 +11,7 @@ from __future__ import annotations
 import os
 import time
 from datetime import datetime, timedelta, timezone
-from typing import Final
+from typing import Any, Final
 
 import bcrypt
 from fastapi import Depends, HTTPException, Request, status
@@ -27,7 +27,7 @@ oauth2 = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
 # Bcrypt rounds — 10 is the common default, fast enough for login-once-per-session
 # and strong enough for this threat model. Bump to 12 in prod.
-_BCRYPT_ROUNDS: Final = 10
+_BCRYPT_ROUNDS: Final = 12  # OWASP 2024 recommendation; ~0.25s/hash on modern CPUs
 
 
 def _hash(pw: str) -> bytes:
@@ -78,7 +78,8 @@ def issue_token(username: str) -> str:
         "role": rec["role"],
         "exp": int((datetime.now(timezone.utc) + timedelta(minutes=TTL_MIN)).timestamp()),
     }
-    return jwt.encode(payload, SECRET, algorithm=ALGO)
+    token: str = jwt.encode(payload, SECRET, algorithm=ALGO)
+    return token
 
 
 async def require_staff(token: str | None = Depends(oauth2)) -> StaffToken:
@@ -98,7 +99,7 @@ _BUCKETS: dict[str, list[float]] = {}
 _MAX_IPS: Final = 4096  # hard cap on tracked IPs
 
 
-def rate_limit(max_per_minute: int = 120):
+def rate_limit(max_per_minute: int = 120) -> Any:
     async def dep(request: Request) -> None:
         ip = request.client.host if request.client else "unknown"
         now = time.monotonic()

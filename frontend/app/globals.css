@@ -26,6 +26,81 @@
   --radius: 12px;
 }
 
+/* =========================================================================
+   Accessible Mode — toggled by `data-accessible="on"` on <html>.
+   Kept as a single block so reviewers can see every a11y affordance at once.
+   ========================================================================= */
+html[data-accessible="on"] {
+  --border: #111827;
+  --border-strong: #000;
+  --text: #000;
+  --text-2: #0f172a;
+  --muted: #334155;
+}
+html[data-accessible="on"] .zone .zone-hit,
+html[data-accessible="on"] .card,
+html[data-accessible="on"] .panel {
+  border-width: 2px !important;
+}
+html[data-accessible="on"] *:focus-visible {
+  outline-width: 3px;
+  outline-offset: 3px;
+}
+html[data-accessible="on"] button,
+html[data-accessible="on"] .btn,
+html[data-accessible="on"] a {
+  min-height: 44px;
+  min-width: 44px;
+}
+html[data-accessible="on"] .btn.small {
+  min-height: 36px;
+}
+/* Disable every animation so vestibular users aren't destabilised. */
+html[data-accessible="on"] *,
+html[data-accessible="on"] *::before,
+html[data-accessible="on"] *::after {
+  animation-duration: 0ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0ms !important;
+}
+/* Shape-coded score pills — colour-blind-safe because shape carries the
+   meaning independently of fill. */
+html[data-accessible="on"] .score-pill::before {
+  display: inline-block;
+  margin-right: 6px;
+  font-weight: 700;
+  font-size: 12px;
+  vertical-align: middle;
+}
+html[data-accessible="on"] .score-pill.good::before { content: "●"; }
+html[data-accessible="on"] .score-pill.ok::before   { content: "▲"; }
+html[data-accessible="on"] .score-pill.bad::before  { content: "■"; }
+
+/* prefers-contrast: more — honour OS-level setting too, even when
+   Accessible Mode isn't explicitly toggled on. */
+@media (prefers-contrast: more) {
+  :root { --border: #000; --text: #000; --muted: #1f2937; }
+  .zone-hit, .card, .panel { border-width: 2px; }
+}
+
+/* -- Accessible Mode toggle button in the nav -- */
+.a11y-toggle {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 10px; border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--panel); color: var(--text-2);
+  font: inherit; cursor: pointer;
+}
+.a11y-toggle:hover { background: var(--panel-soft); }
+.a11y-toggle.on {
+  background: var(--accent); color: #fff; border-color: var(--accent);
+}
+.a11y-toggle .a11y-icon { font-weight: 700; }
+.a11y-toggle .a11y-label { font-size: 12px; }
+@media (max-width: 820px) {
+  .a11y-toggle .a11y-label { display: none; }
+}
+
 /* Focus-visible ring — shown on keyboard navigation only, not on mouse clicks. */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
   outline: 2px solid var(--accent);

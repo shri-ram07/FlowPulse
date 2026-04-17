@@ -1,0 +1,54 @@
+# Dependabot — weekly scans across all four ecosystems in the repo.
+# Security alerts are always immediate; this schedule governs routine updates.
+version: 2
+updates:
+  # Backend (pip)
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+    open-pull-requests-limit: 5
+    labels: ["deps", "backend"]
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      google:
+        patterns: ["google-*", "opentelemetry-*"]
+      pytest:
+        patterns: ["pytest*"]
+
+  # Frontend (npm)
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels: ["deps", "frontend"]
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      next:
+        patterns: ["next*", "@next/*"]
+      react:
+        patterns: ["react*", "@types/react*"]
+
+  # Container images
+  - package-ecosystem: "docker"
+    directory: "/infra"
+    schedule:
+      interval: "weekly"
+    labels: ["deps", "docker"]
+    commit-message:
+      prefix: "chore(deps)"
+
+  # GitHub Actions pins
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels: ["deps", "ci"]
+    commit-message:
+      prefix: "chore(deps)"
