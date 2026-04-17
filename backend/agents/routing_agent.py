@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from backend.agents import tools
 from backend.agents.adk_runtime import build_adk_agent
+from backend.agents.config import GEMINI_MODEL
 from backend.agents.schemas import RouteReply
 
 ROUTING_SYS_PROMPT = """You are the FlowPulse Routing Agent.
@@ -38,7 +39,7 @@ Rules:
 
 routing_runner = build_adk_agent(
     name="routing_agent",
-    model="gemini-2.0-flash",
+    model=GEMINI_MODEL,
     instruction=ROUTING_SYS_PROMPT,
     tool_fns=[tools.get_all_zones, tools.get_best_route, tools.get_zone_state],
 )

@@ -15,6 +15,7 @@ import re
 
 from backend.agents import tools
 from backend.agents.adk_runtime import build_adk_agent, reset_session, run_adk
+from backend.agents.config import GEMINI_MODEL
 from backend.agents.forecast_agent import fallback_forecast
 from backend.agents.prompts import ATTENDEE_SYS_PROMPT
 from backend.agents.routing_agent import fallback_route
@@ -58,7 +59,7 @@ _attendee_tools = [
 
 _runner = build_adk_agent(
     name="attendee_agent",
-    model="gemini-2.0-flash",
+    model=GEMINI_MODEL,
     instruction=ATTENDEE_SYS_PROMPT,
     tool_fns=_attendee_tools,
 )

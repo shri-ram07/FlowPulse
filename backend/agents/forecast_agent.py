@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from backend.agents import tools
 from backend.agents.adk_runtime import build_adk_agent
+from backend.agents.config import GEMINI_MODEL
 from backend.agents.schemas import ForecastReport
 
 FORECAST_SYS_PROMPT = """You are the FlowPulse Forecast Agent.
@@ -31,7 +32,7 @@ Rules:
 
 forecast_runner = build_adk_agent(
     name="forecast_agent",
-    model="gemini-2.0-flash",
+    model=GEMINI_MODEL,
     instruction=FORECAST_SYS_PROMPT,
     tool_fns=[tools.forecast_zone, tools.get_zone_state, tools.get_all_zones],
 )

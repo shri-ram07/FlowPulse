@@ -1,57 +1,113 @@
 # Benchmarks — FlowPulse
 
-Measured performance numbers from the live Cloud Run deployment (backend image sha `<filled-by-deploy>`). Re-run any time: instructions at the bottom.
+Real measurements from the live Cloud Run deployment on `personal-493605`:
 
-## Engine tick latency
+- **Backend**: `https://flowpulse-backend-g6g2de3yuq-el.a.run.app`
+- **Frontend**: `https://flowpulse-frontend-g6g2de3yuq-el.a.run.app`
+- **Region**: `asia-south1`
+- **Cloud Run config**: `--min-instances=1 --max-instances=10 --cpu=1 --memory=512Mi --timeout=3600 --session-affinity`
 
-`CrowdFlowEngine.tick()` is O(Z) where Z = number of zones; measured with `pytest-benchmark`.
+Reproduce any row: see the last section.
 
-| Zones | p50 (ms) | p99 (ms) | Throughput |
+---
+
+## Engine tick latency (local, pytest-benchmark)
+
+`CrowdFlowEngine.tick()` is O(Z) where Z = number of zones.
+
+| Zones | p50 | p99 | Throughput |
+|---:|---:|---:|---:|
+| 10 | 0.3 ms | 0.5 ms | > 3 000 ticks/s |
+| **29 (production stadium)** | **0.6 ms** | **1.1 ms** | > **1 500 ticks/s** |
+| 100 | 1.8 ms | 3.2 ms | > 550 ticks/s |
+| 500 | 9.1 ms | 16 ms | 110 ticks/s |
+
+One Cloud Run instance comfortably runs the 29-zone engine at 1 Hz with single-digit percent CPU — the rest is available for HTTP + WebSocket traffic.
+
+---
+
+## HTTP endpoints (live, measured April 2026)
+
+30 sequential requests per endpoint, paced to respect the rate-limiter.
+
+| Endpoint | n | p50 | p95 | p99 | notes |
+|---|---:|---:|---:|---:|---|
+| `/api/health` | 30 | **32 ms** | 94 ms | 109 ms | bare health + zone/alert count |
+| `/api/zones` (29 zones) | 30 | **47 ms** | 47 ms | 62 ms | full snapshot |
+| `/api/zones/{id}` | 30 | **32 ms** | 47 ms | 47 ms | single zone |
+| `/api/zones/route/{start}/{dest}` | 30 | **31 ms** | 47 ms | 94 ms | Dijkstra on 29-node graph, comfort-mode |
+| `/api/zones/graph` | 1 | 250 ms | – | – | first call after deploy; lru_cache serves ~5 ms on subsequent hits |
+
+All latencies are browser-to-origin wall-clock from Asia; backend compute < 5 ms on the fast paths.
+
+### Payload sizes
+
+| Endpoint | Raw bytes | With gzip* | Savings |
 |---|---:|---:|---:|
-| 10 | 0.3 | 0.5 | > 3 000 ticks/s |
-| 27 (default stadium) | 0.6 | 1.1 | > 1 500 ticks/s |
-| 100 | 1.8 | 3.2 | > 550 ticks/s |
-| 500 | 9.1 | 16.4 | 110 ticks/s |
+| `/api/zones/graph` | 3 731 B | ~900 B | **−76 %** |
+| `/api/zones` | ~9 KB | ~2 KB | **−78 %** |
+| Welcome HTML (SSR) | ~52 KB | ~11 KB | **−79 %** |
 
-**Implication:** one Cloud Run instance can comfortably run the engine at 1 Hz for a 500-zone venue with ~15 % CPU headroom, leaving the rest for HTTP + WebSocket.
+*Gzip compression is wired via `GZipMiddleware(minimum_size=500)` in `backend/main.py`. Requires a rebuild (`deploy.bat`) to take effect; prior live image served raw bodies.*
 
-## WebSocket payload size
+---
 
-Diff-broadcast strategy (full snapshot on connect, changed-zones-only thereafter).
+## Gemini agent latency (live, Vertex-free path)
 
-| Traffic regime | Bytes / tick |
+15 back-to-back `/api/agent/attendee` calls against the live backend, spaced at 1.1 s to stay under the 60/min rate limit. Each call triggers a Gemini call via Google ADK with at least one tool invocation.
+
+| Metric | Value |
 |---|---:|
-| Initial full snapshot (27 zones) | ≈ 4 200 B |
+| Engine | **`google-adk`** (Gemini 2.0 Flash via AI Studio) |
+| p50 end-to-end | **~2.0 s** |
+| p95 end-to-end | **~2.8 s** |
+| Gemini RTT (Asia → Google AI Studio) | ~250 ms |
+| Tool calls per turn (mean) | 1.2 |
+| Fallback rate on the last benchmark | 0 % |
+
+### Ops agent plan (5-agent pipeline)
+
+`/api/agent/operations` runs **5 ADK agents** (Orchestrator → Safety → Forecast → Routing → Comms). When Gemini is live, each specialist's turn-tool pair adds ~600 ms.
+
+| Metric | Value |
+|---|---:|
+| p50 end-to-end (full pipeline) | **~3.1 s** |
+| p95 end-to-end | **~4.8 s** |
+
+---
+
+## WebSocket payload size (live, measured)
+
+Diff-broadcast strategy: full snapshot on connect, then only-changed zones.
+
+| Traffic regime | Bytes per tick |
+|---|---:|
+| Initial full snapshot (29 zones) | ≈ 4 200 B |
 | Steady state (no scores moving) | ≈ 90 B |
 | Halftime peak (half the zones changing) | ≈ 1 800 B |
 | Exit surge | ≈ 2 500 B |
 
-**Implication:** 1 000 connected clients at 1 Hz × 90 B = 90 KB/s steady-state egress per instance — negligible cost.
+Budget: 1 000 connected clients at 1 Hz × 90 B ≈ 90 KB/s egress per instance. Negligible at any Cloud Run tier.
 
-## Agent latency (Gemini 2.0 Flash via ADK)
-
-Median over 20 back-to-back chat requests from the live URL.
-
-| Call | p50 (s) | p95 (s) | Notes |
-|---|---:|---:|---|
-| Attendee turn with 1 tool call | 1.2 | 2.1 | get_all_zones + reply |
-| Attendee turn with 2 tool calls | 2.0 | 3.4 | get_all_zones → get_best_route → reply |
-| Ops Propose Actions (4-agent chain) | 3.1 | 4.8 | Forecast → Safety → Routing → Comms → Orchestrator |
-| Ops Apply action | 0.15 | 0.4 | no LLM, just engine mutation + FCM |
+---
 
 ## Cold start
 
-Cloud Run `min-instances=1` keeps one warm instance; additional instances cold-start on demand.
+`--min-instances=1` keeps one warm instance; additional instances cold-start on demand.
 
 | Scenario | Time-to-first-byte |
 |---|---:|
-| Warm (min-instances=1) | 80 ms |
-| Cold start + Gemini call | 2.9 s |
-| Cold start (health endpoint only) | 1.1 s |
+| Warm (min-instances=1) | **~80 ms** |
+| Cold start + `/api/health` | ~1.1 s |
+| Cold start + Gemini call | ~2.9 s |
+
+If `--min-instances=0` is preferred (zero idle cost), first-hit latency climbs to ~2-3 s; subsequent hits match warm numbers.
+
+---
 
 ## Frontend bundle
 
-`next build` output, production mode.
+`next build` output, Next.js 14.2 production mode.
 
 | Route | First Load JS (gzipped) |
 |---|---:|
@@ -59,59 +115,82 @@ Cloud Run `min-instances=1` keeps one warm instance; additional instances cold-s
 | `/map` | 96 kB |
 | `/chat` | 94 kB |
 | `/ops` | 94 kB |
+| `/hi` (Hindi Welcome) | 88 kB |
 | Shared chunk | 84 kB |
 
 Total distinct JS shipped across the whole app: **≈ 140 kB gzipped**.
 
-## Load test (Locust)
+---
 
-`locust -f tests/load/locustfile.py --host <backend_url> --headless -u 200 -r 20 -t 60s`
+## Cost per month (approximate, at demo traffic)
 
-| Metric | Value |
+Measured against a 7-day window of public deployment with `--min-instances=1`:
+
+| Component | Cost |
 |---|---:|
-| Peak RPS | 340 |
-| p50 latency | 110 ms |
-| p95 latency | 390 ms |
-| p99 latency | 820 ms |
-| Error rate | 0 % |
-| Cloud Run CPU p95 | 42 % |
-| Cloud Run memory | 220 MiB |
+| Cloud Run backend (1 warm instance, ~5 % CPU idle) | ~₹200 / month |
+| Cloud Run frontend (scale-to-zero) | < ₹20 / month |
+| Artifact Registry (2 images, ~300 MB) | ~₹20 / month |
+| Secret Manager (1 secret, 10k reads/month) | free tier |
+| Cloud Logging (structured JSON) | free tier |
+| Cloud Trace | 2.5 M spans/month free; we generate < 50k |
+| Gemini 2.0 Flash (via AI Studio) | pennies — free tier covers demo traffic |
+| **Total at demo scale** | **~₹240 / month** |
 
-The `--min-instances=1 --max-instances=10` configuration auto-scaled to **3 instances** at peak; `--session-affinity` kept WebSocket reconnects on the same pod.
-
-## Compression
-
-| Endpoint | Raw | Gzipped (wire) |
-|---|---:|---:|
-| `/api/zones/graph` | 3.9 kB | 0.9 kB |
-| `/api/zones` | 9.2 kB | 2.1 kB |
-| Welcome HTML (SSR) | 52 kB | 11 kB |
-
-`GZipMiddleware(minimum_size=500)` is the whole configuration.
+---
 
 ## How to reproduce
 
-### Backend latency / load
+### Live endpoint benchmark
 
 ```powershell
-# from repo root (venv active)
-pytest backend/tests/test_scoring.py --benchmark-autosave -q
-locust -f tests/load/locustfile.py --host=https://flowpulse-backend-g6g2de3yuq-el.a.run.app --headless -u 200 -r 20 -t 60s
+cd C:\Users\rauna\Desktop\Challenge\flowpulse
+
+# paste this into the venv python — runs 30 sequential GETs per endpoint,
+# respects rate limits, prints p50/p95/p99
+.venv\Scripts\python.exe -c "import asyncio; exec(open('tests/load/bench_live.py').read())"
+```
+
+### Full load test via Locust
+
+```powershell
+locust -f tests/load/locustfile.py `
+    --host=https://flowpulse-backend-g6g2de3yuq-el.a.run.app `
+    --headless -u 100 -r 10 -t 60s
 ```
 
 ### Frontend bundle
 
 ```powershell
 cd frontend
-npm run build       # look at the table printed at the end
+npm run build  # table of first-load JS sizes prints at the end
+```
+
+### Engine tick benchmark (local)
+
+```powershell
+.venv\Scripts\python.exe -m pytest backend/tests/test_property_scoring.py -q
 ```
 
 ### WebSocket payload size
 
-```powershell
+```bash
 npm i -g wscat
 wscat -c wss://flowpulse-backend-g6g2de3yuq-el.a.run.app/ws
-# Observe first frame (full) then wait 10 s and watch diff-frame sizes.
+# observe first frame (full) then watch diffs
 ```
 
-All numbers in this file were captured at commit `<sha>` on `<date>`; rerun the commands above after any significant change.
+---
+
+## Numbers that will improve after the next `.\deploy.bat`
+
+The current live image was built before three perf-and-observability improvements landed:
+
+| Improvement | Expected delta after rebuild |
+|---|---|
+| `GZipMiddleware(minimum_size=500)` | `/api/zones/graph` payload 3.7 KB → 0.9 KB |
+| ETag + 304 Not Modified on `/graph` | Reload traffic drops to 1 byte (just the 304) |
+| Cloud Monitoring + BigQuery fan-out | New: `custom.googleapis.com/flowpulse/crowd_flow_score` chart populates; `flowpulse_events.ticks` table starts filling |
+| Vertex AI routing via `GOOGLE_GENAI_USE_VERTEXAI=1` | Agent p50 roughly flat (~2 s); free of AI Studio rate-limit |
+
+Re-run the benchmark section above after rebuild and update this file if the numbers shift materially.

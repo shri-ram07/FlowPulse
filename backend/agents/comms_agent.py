@@ -13,6 +13,7 @@ from typing import Literal
 
 from backend.agents import tools
 from backend.agents.adk_runtime import build_adk_agent
+from backend.agents.config import GEMINI_MODEL
 from backend.agents.schemas import CommsDraft
 
 COMMS_SYS_PROMPT = """You are the FlowPulse Comms Agent.
@@ -36,7 +37,7 @@ Rules:
 
 comms_runner = build_adk_agent(
     name="comms_agent",
-    model="gemini-2.0-flash",
+    model=GEMINI_MODEL,
     instruction=COMMS_SYS_PROMPT,
     tool_fns=[tools.get_zone_state, tools.get_all_zones],
 )

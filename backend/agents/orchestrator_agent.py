@@ -27,6 +27,7 @@ import re
 from backend.agents import tools
 from backend.agents.adk_runtime import HAS_ADK, build_adk_agent, run_adk
 from backend.agents.comms_agent import fallback_comms
+from backend.agents.config import GEMINI_MODEL
 from backend.agents.forecast_agent import fallback_forecast
 from backend.agents.routing_agent import fallback_route
 from backend.agents.safety_agent import fallback_safety, safety_runner
@@ -119,7 +120,7 @@ _orchestrator_tools = [
 
 orchestrator_runner = build_adk_agent(
     name="orchestrator_agent",
-    model="gemini-2.0-flash",
+    model=GEMINI_MODEL,
     instruction=ORCHESTRATOR_SYS_PROMPT,
     tool_fns=_orchestrator_tools,
     # Force Gemini to emit JSON matching the OpsPlan schema — eliminates
