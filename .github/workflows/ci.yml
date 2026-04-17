@@ -16,7 +16,7 @@ jobs:
   backend:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
       - name: Install deps
@@ -42,7 +42,7 @@ jobs:
   frontend:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
         with: { node-version: "20" }
       - working-directory: frontend
@@ -58,7 +58,7 @@ jobs:
   gitleaks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with: { fetch-depth: 0 }
       - name: gitleaks
         uses: gitleaks/gitleaks-action@v2
@@ -69,7 +69,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: backend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Build backend image
         run: docker build -f infra/Dockerfile.backend -t flowpulse-backend:ci .
       - name: Trivy scan (backend)
@@ -92,7 +92,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: frontend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Build frontend image
         run: docker build -f infra/Dockerfile.frontend -t flowpulse-frontend:ci .
       - name: Trivy scan (frontend)
@@ -107,7 +107,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: backend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Build backend image
         run: docker build -f infra/Dockerfile.backend -t flowpulse-backend:sbom .
       - name: Generate SBOM (SPDX JSON)
@@ -129,7 +129,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Lighthouse CI
         uses: treosh/lighthouse-ci-action@v11
         with:
@@ -147,6 +147,6 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with: { fetch-depth: 0 }
       - uses: wagoid/commitlint-github-action@v6
