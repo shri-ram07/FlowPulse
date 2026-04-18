@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/shri-ram07/FlowPulse/security/advisories/new
+    about: Please report security issues privately via GitHub's advisory form — not a public issue. See SECURITY.md.
+  - name: Live demo question
+    url: https://flowpulse-frontend-g6g2de3yuq-el.a.run.app
+    about: Try the live demo. Answers to "can it do X" are usually faster to find there than in an issue.

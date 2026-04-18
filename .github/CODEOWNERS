@@ -1,0 +1,17 @@
+# FlowPulse — GitHub CODEOWNERS
+# GitHub uses this file to auto-assign reviewers when a PR touches these paths.
+# Syntax reference: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Single-author project. Any PR auto-requests review from @shri-ram07.
+#
+# Matchers run top-to-bottom; later patterns take precedence over earlier ones.
+
+* @shri-ram07
+
+# Paths with extra care — duplicate to make the ownership explicit.
+/backend/agents/          @shri-ram07
+/backend/core/engine.py   @shri-ram07
+/backend/security/        @shri-ram07
+/infra/                   @shri-ram07
+/.github/workflows/       @shri-ram07
+/docs/adr/                @shri-ram07

@@ -1,0 +1,66 @@
+version: 2
+
+# FlowPulse — automated dependency updates.
+# Runs weekly; one PR per ecosystem, grouped where safe.
+# Security-triggered PRs fire immediately regardless of schedule.
+
+updates:
+  - package-ecosystem: pip
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Asia/Kolkata
+    open-pull-requests-limit: 5
+    labels: [dependencies, python]
+    commit-message:
+      prefix: "build(deps)"
+      include: scope
+    groups:
+      fastapi-stack:
+        patterns: [fastapi, uvicorn, starlette, pydantic, "pydantic-*"]
+      google-cloud:
+        patterns: ["google-*", "opentelemetry-*"]
+      testing:
+        patterns: [pytest, "pytest-*", hypothesis]
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Asia/Kolkata
+    open-pull-requests-limit: 5
+    labels: [dependencies, javascript]
+    commit-message:
+      prefix: "build(deps)"
+      include: scope
+    groups:
+      next-stack:
+        patterns: [next, "next-*", react, "react-*", "@next/*"]
+      testing:
+        patterns: [vitest, "@vitest/*", "@testing-library/*", jsdom]
+      linting:
+        patterns: [eslint, "eslint-*", "@typescript-eslint/*", prettier]
+
+  - package-ecosystem: docker
+    directory: /infra
+    schedule:
+      interval: weekly
+      day: monday
+    labels: [dependencies, docker]
+    commit-message:
+      prefix: "build(deps)"
+      include: scope
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    labels: [dependencies, github-actions]
+    commit-message:
+      prefix: "build(deps)"
+      include: scope
