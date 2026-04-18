@@ -41,7 +41,7 @@ Built for IPL, FIFA, and Olympics-scale venues. Runs on a laptop with one comman
 ## Run locally in 10 minutes
 
 ```bash
-git clone https://github.com/Ananya419/OptimFlow
+git clone https://github.com/shri-ram07/FlowPulse
 cd flowpulse
 
 # One-shot launcher: creates .venv, installs deps, opens

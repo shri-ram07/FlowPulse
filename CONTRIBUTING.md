@@ -6,7 +6,7 @@ dev loop running, what the code-style gates are, and how to submit changes.
 ## Local setup (Windows / macOS / Linux)
 
 ```bash
-git clone https://github.com/Ananya419/OptimFlow
+git clone https://github.com/shri-ram07/FlowPulse
 cd flowpulse
 # One-shot launcher: creates .venv, installs deps, opens backend + frontend tabs.
 start.bat        # Windows

@@ -22,10 +22,10 @@ classifiers = [
 
 [project.urls]
 Homepage      = "https://flowpulse-frontend-g6g2de3yuq-el.a.run.app"
-Repository    = "https://github.com/Ananya419/OptimFlow"
-Documentation = "https://github.com/Ananya419/OptimFlow/blob/main/README.md"
-Changelog     = "https://github.com/Ananya419/OptimFlow/blob/main/CHANGELOG.md"
-Issues        = "https://github.com/Ananya419/OptimFlow/issues"
+Repository    = "https://github.com/shri-ram07/FlowPulse"
+Documentation = "https://github.com/shri-ram07/FlowPulse/blob/main/README.md"
+Changelog     = "https://github.com/shri-ram07/FlowPulse/blob/main/CHANGELOG.md"
+Issues        = "https://github.com/shri-ram07/FlowPulse/issues"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

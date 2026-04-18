@@ -14,7 +14,7 @@
 - Live frontend: https://flowpulse-frontend-g6g2de3yuq-el.a.run.app
 - Live backend:  https://flowpulse-backend-g6g2de3yuq-el.a.run.app
 - API docs:      https://flowpulse-backend-g6g2de3yuq-el.a.run.app/docs
-- GitHub:        https://github.com/Ananya419/OptimFlow
+- GitHub:        https://github.com/shri-ram07/FlowPulse
 
 ## Documentation
 - [README.md](README.md): product thesis + architecture diagrams

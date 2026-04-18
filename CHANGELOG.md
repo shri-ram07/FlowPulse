@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to OptimFlow are documented here. This project follows
+All notable changes to FlowPulse are documented here. This project follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and the format of
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
@@ -23,7 +23,7 @@ All notable changes to OptimFlow are documented here. This project follows
 - **Model default** is now `gemini-3-flash-preview` (GA trade-off moved to ADR 0005).
   `gemini-2.5-flash` is the documented one-command fallback when the preview
   SKU's quota tightens (no rebuild needed).
-- `infra/deploy.ps1` pins `OPTIMFLOW_GEMINI_MODEL=gemini-3-flash-preview`
+- `infra/deploy.ps1` pins `FLOWPULSE_GEMINI_MODEL=gemini-3-flash-preview`
   on every rollout so the Cloud Run revision is explicit about its model.
 - Rewrote ADR 0005 with the live-observed model trade-off table.
 
@@ -31,7 +31,7 @@ All notable changes to OptimFlow are documented here. This project follows
 
 ### Added
 - **Gemini 3 Flash (preview)** as the default model (2.5× faster TTFT, 45% faster output
-  vs. 2.5 Flash). Overridable via `OPTIMFLOW_GEMINI_MODEL`.
+  vs. 2.5 Flash). Overridable via `FLOWPULSE_GEMINI_MODEL`.
 - Whole-backend `mypy --strict` coverage (`agents/`, `api/`, `sim/`, `main.py`, `runtime.py`,
   `stadium_config.py` — previously only `core`, `security`, `observability`).
 - Named `Final[T]` constants for every scoring, engine, simulator, auth, and forecast threshold
@@ -59,7 +59,7 @@ All notable changes to OptimFlow are documented here. This project follows
 - Unused `monkeypatch` fixture from `test_attendee_session`.
 
 ### Infrastructure
-- `infra/deploy.ps1` pins `OPTIMFLOW_GEMINI_MODEL` per deploy — one-liner `gcloud run services
+- `infra/deploy.ps1` pins `FLOWPULSE_GEMINI_MODEL` per deploy — one-liner `gcloud run services
   update` reverts the model without a rebuild.
 
 ## [1.0.0] — 2026-04-15
@@ -75,8 +75,8 @@ accessibility mode, Hindi locale, end-to-end verification harness.
 - Next.js 14 PWA (Welcome / Map / Chat / Ops / `/hi` Hindi locale).
 - Cloud Run deployment (`asia-south1`), Cloud Build + Artifact Registry + Secret Manager.
 - Observability: Cloud Logging (structured JSON), Cloud Trace (per-tool spans),
-  Cloud Monitoring (`optimflow/crowd_flow_score` custom metric), BigQuery
-  (`optimflow_events.ticks` streaming sink).
+  Cloud Monitoring (`flowpulse/crowd_flow_score` custom metric), BigQuery
+  (`flowpulse_events.ticks` streaming sink).
 - Firebase Cloud Messaging v1 with OAuth-minted bearer tokens.
 - Security: bcrypt-12 + JWT, CSP/HSTS/COOP/CORP headers, sliding-window rate limiting,
   structured audit log on every privileged write.
@@ -84,5 +84,5 @@ accessibility mode, Hindi locale, end-to-end verification harness.
   18 frontend Vitest tests, Playwright + axe-core e2e, Locust load profile.
 - Terraform IaC spec mirroring the imperative `deploy.ps1`.
 
-[1.1.0]: https://github.com/Ananya419/OptimFlow/releases/tag/v1.1.0
-[1.0.0]: https://github.com/Ananya419/OptimFlow/releases/tag/v1.0.0
+[1.1.0]: https://github.com/shri-ram07/FlowPulse/releases/tag/v1.1.0
+[1.0.0]: https://github.com/shri-ram07/FlowPulse/releases/tag/v1.0.0
