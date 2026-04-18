@@ -1,0 +1,50 @@
+# FlowPulse
+
+> Google-native crowd-orchestration platform for live sporting venues.
+> Models every zone as a node in a live flow graph with a Crowd Flow Score (0–100);
+> five Google ADK agents on Gemini reason over it to guide fans and direct staff.
+
+## What it does
+- Real-time crowd-density awareness for stadiums at IPL / FIFA / Olympics scale.
+- Fan concierge routes around hotspots via comfort-mode Dijkstra.
+- Ops console shows staff a grounded JSON action plan — redirect, open gate, dispatch staff, push notify.
+- Closed-loop: action applied → engine reflects → Flow Score rebalances next tick.
+
+## Key links
+- Live frontend: https://flowpulse-frontend-g6g2de3yuq-el.a.run.app
+- Live backend:  https://flowpulse-backend-g6g2de3yuq-el.a.run.app
+- API docs:      https://flowpulse-backend-g6g2de3yuq-el.a.run.app/docs
+- GitHub:        https://github.com/Ananya419/OptimFlow
+
+## Documentation
+- [README.md](README.md): product thesis + architecture diagrams
+- [AGENTS.md](AGENTS.md): machine-readable project map
+- [VERIFICATION.md](VERIFICATION.md): 50 rubric-keyed claim → evidence → verify commands
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): component + data-flow details
+- [docs/SECURITY.md](docs/SECURITY.md): STRIDE threat model
+- [docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md): Accessible Mode, Hindi locale, WCAG 2.1 AA
+- [docs/BENCHMARKS.md](docs/BENCHMARKS.md): measured engine / HTTP / agent / WebSocket numbers
+- [docs/DEPLOYING.md](docs/DEPLOYING.md): Cloud Run step-by-step + Terraform alt path
+- [docs/adr/](docs/adr/): Architecture Decision Records (1 flow-system model, 2 grounded tool-calls, 3 Cloud Run choice)
+
+## Source code
+- [backend/agents/](backend/agents/): 5 ADK agents + shared ADK runtime + Pydantic schemas
+- [backend/core/engine.py](backend/core/engine.py): Crowd Flow Engine
+- [backend/core/scoring.py](backend/core/scoring.py): Crowd Flow Score + EWMA forecast
+- [backend/core/graph.py](backend/core/graph.py): Dijkstra routing (comfort + time modes)
+- [backend/observability/](backend/observability/): Cloud Trace + Cloud Monitoring + BigQuery sinks
+- [backend/security/](backend/security/): JWT + bcrypt-12 + CSP/HSTS/COOP headers + rate limiter
+- [backend/api/](backend/api/): REST + WebSocket routes
+- [frontend/app/](frontend/app/): Next.js 14 PWA (Welcome, Map, Chat, Ops, /hi Hindi)
+- [frontend/components/](frontend/components/): StadiumMap, ChatPanel, OpsActionFeed, AccessibleModeToggle
+- [infra/terraform/main.tf](infra/terraform/main.tf): declarative Cloud Run deployment
+
+## Google Cloud services used
+Google ADK · Gemini 3 Flash (preview) + Vertex AI · Firebase Cloud Messaging v1 · Cloud Run · Cloud Build · Artifact Registry · Secret Manager · Cloud Logging (structured JSON) · Cloud Trace (per-tool spans) · Cloud Monitoring (custom metric) · BigQuery (streaming sink) · IAM (least-privilege service account) · Terraform IaC.
+
+## How to verify any claim
+```
+python scripts/verify_live.py      # runs every assertion against the live URL
+make verify                         # full local test + lint + type suite
+cat VERIFICATION.md                 # rubric-keyed table, one row per claim
+```

@@ -1,0 +1,55 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.venv/
+.env
+.env.local
+
+# Google service-account keys — NEVER commit these.
+*-fcm.json
+*-service-account*.json
+flowpulse-fcm.json
+.gcp/
+credentials.json
+service-account.json
+*.pem
+
+node_modules/
+.next/
+out/
+frontend/.next/
+frontend/node_modules/
+
+# editor
+.vscode/
+.idea/
+*.log
+
+# build / test artifacts
+.coverage
+.coverage.*
+coverage.xml
+coverage/
+frontend/coverage/
+htmlcov/
+tsconfig.tsbuildinfo
+frontend/tsconfig.tsbuildinfo
+.mypy_cache/
+.hypothesis/
+
+# Python build artifacts
+dist/
+build/
+*.egg-info/
+*.whl
+
+# OS cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temp / editor
+*.swp
+*.tmp
+*.bak

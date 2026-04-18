@@ -1,0 +1,110 @@
+[project]
+name = "flowpulse"
+version = "1.1.0"
+description = "FlowPulse — the nervous system for live venues. Crowd-orchestration platform for stadiums, built end-to-end on Google Cloud with 5 Google ADK agents on Gemini 3 Flash."
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Shri Ram dwivedi", email = "159000468+shri-ram07@users.noreply.github.com" },
+]
+keywords = ["crowd-orchestration", "google-adk", "gemini", "cloud-run", "multi-agent", "stadium"]
+requires-python = ">=3.11"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Framework :: FastAPI",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Homepage      = "https://flowpulse-frontend-g6g2de3yuq-el.a.run.app"
+Repository    = "https://github.com/Ananya419/OptimFlow"
+Documentation = "https://github.com/Ananya419/OptimFlow/blob/main/README.md"
+Changelog     = "https://github.com/Ananya419/OptimFlow/blob/main/CHANGELOG.md"
+Issues        = "https://github.com/Ananya419/OptimFlow/issues"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = ["."]
+testpaths = ["backend/tests"]
+filterwarnings = [
+    "ignore::DeprecationWarning:google",
+    "ignore::UserWarning:google",
+]
+addopts = "--cov=backend --cov-report=term-missing --cov-fail-under=85"
+
+[tool.coverage.run]
+source = ["backend"]
+omit = [
+    "backend/tests/*",
+    "backend/observability/*",       # exercised only in live GCP env
+    "backend/agents/adk_runtime.py", # live ADK path requires API key
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == \"__main__\":",
+]
+show_missing = true
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # bugbear
+    "UP",  # pyupgrade
+    "S",   # bandit (security)
+    "SIM", # simplify
+    "RUF", # ruff-specific
+    "ARG", # unused arguments (catches dead params)
+    "PIE", # misc pep-8 cleanups
+]
+ignore = [
+    "E501",   # line too long — handled by formatter
+    "B008",   # FastAPI Depends() as default arg is idiomatic
+    "S101",   # asserts are fine in tests
+    "RUF001", # en-dashes in prose are intentional (docstrings / prompts)
+    "RUF002",
+    "RUF012", # ClassVar annotations for obvious class dicts add noise
+]
+
+[tool.ruff.lint.per-file-ignores]
+"backend/tests/*" = ["S101", "S105", "S106"]  # asserts, hardcoded test passwords
+"backend/security/auth.py" = ["S105", "S106"]  # DEMO passwords are documented as demo-only
+"backend/sim/simulator.py" = ["S311"]          # stdlib random is fine for a simulator
+
+[tool.mypy]
+# Run with `mypy backend --strict` against the production tree
+# (see CI + the Makefile). Tests keep the permissive override below so
+# fixture-heavy code doesn't need full annotations.
+python_version = "3.11"
+strict_optional = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+strict_equality = true
+disallow_untyped_defs = true
+disallow_untyped_calls = true
+check_untyped_defs = true
+ignore_missing_imports = true   # google.adk / google.genai ship no py.typed
+
+[[tool.mypy.overrides]]
+# Tests use pytest fixtures + monkey-patching that don't lend themselves to
+# strict typing. Keep them clean (ruff + no unused ignores) but not typed.
+module = "backend.tests.*"
+disallow_untyped_defs = false
+disallow_untyped_calls = false
+check_untyped_defs = false
