@@ -13,7 +13,7 @@ from backend.runtime import get_engine, get_simulator
 
 
 @pytest.mark.asyncio
-async def test_phase_transitions_cover_every_phase():
+async def test_phase_transitions_cover_every_phase() -> None:
     sim = get_simulator()
     # Fast-forward by manipulating _start_ts; for each phase, call the step
     # helper directly and assert the sim reports the expected phase name.
@@ -27,7 +27,7 @@ async def test_phase_transitions_cover_every_phase():
 
 
 @pytest.mark.asyncio
-async def test_pre_match_phase_drives_gate_inflow():
+async def test_pre_match_phase_drives_gate_inflow() -> None:
     sim = get_simulator()
     eng = get_engine()
 
@@ -43,7 +43,7 @@ async def test_pre_match_phase_drives_gate_inflow():
 
 
 @pytest.mark.asyncio
-async def test_halftime_moves_seating_to_concourses():
+async def test_halftime_moves_seating_to_concourses() -> None:
     sim = get_simulator()
     eng = get_engine()
     import time as _time
@@ -67,7 +67,7 @@ async def test_halftime_moves_seating_to_concourses():
 
 
 @pytest.mark.asyncio
-async def test_chaos_slider_increases_entries():
+async def test_chaos_slider_increases_entries() -> None:
     sim = get_simulator()
     eng = get_engine()
     import time as _time
@@ -83,7 +83,7 @@ async def test_chaos_slider_increases_entries():
 
 
 @pytest.mark.asyncio
-async def test_start_and_stop_lifecycle():
+async def test_start_and_stop_lifecycle() -> None:
     sim = get_simulator()
     sim.start()
     assert sim._task is not None and not sim._task.done()

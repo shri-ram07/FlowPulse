@@ -19,7 +19,7 @@
 ## Documentation
 - [README.md](README.md): product thesis + architecture diagrams
 - [AGENTS.md](AGENTS.md): machine-readable project map
-- [VERIFICATION.md](VERIFICATION.md): 50 rubric-keyed claim → evidence → verify commands
+- [VERIFICATION.md](VERIFICATION.md): 65 rubric-keyed claim → evidence → verify commands
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): component + data-flow details
 - [docs/SECURITY.md](docs/SECURITY.md): STRIDE threat model
 - [docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md): Accessible Mode, Hindi locale, WCAG 2.1 AA

@@ -9,6 +9,7 @@ with a tiny stub runner.
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Iterator
 from types import SimpleNamespace
 
 import pytest
@@ -19,12 +20,12 @@ from backend.main import app
 
 
 @pytest.fixture
-def client():
+def client() -> Iterator[TestClient]:
     with TestClient(app) as c:
         yield c
 
 
-def test_attendee_accepts_session_id(client: TestClient):
+def test_attendee_accepts_session_id(client: TestClient) -> None:
     r = client.post(
         "/api/agent/attendee",
         json={
@@ -36,13 +37,13 @@ def test_attendee_accepts_session_id(client: TestClient):
     assert r.json()["reply"]
 
 
-def test_attendee_reset_endpoint(client: TestClient):
+def test_attendee_reset_endpoint(client: TestClient) -> None:
     r = client.post("/api/agent/attendee/reset", json={"session_id": "tab-abc123"})
     assert r.status_code == 200
     assert r.json() == {"ok": True, "session_id": "tab-abc123"}
 
 
-def test_session_cache_reuses_across_calls():
+def test_session_cache_reuses_across_calls() -> None:
     """run_adk should call create_session once per session_id, not per call."""
 
     class StubSessionService:

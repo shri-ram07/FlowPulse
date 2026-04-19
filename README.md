@@ -6,7 +6,7 @@
 
 **▶ Live demo — [flowpulse-frontend-g6g2de3yuq-el.a.run.app](https://flowpulse-frontend-g6g2de3yuq-el.a.run.app)**
 
-**Every claim verifiable — [VERIFICATION.md](VERIFICATION.md) (50 rubric rows · one command: `python scripts/verify_live.py`)**
+**Every claim verifiable — [VERIFICATION.md](VERIFICATION.md) (65 rubric rows · one command: `python scripts/verify_live.py`)**
 
 Sense · Decide · Influence · Optimize
 
@@ -67,7 +67,7 @@ One-command deploy to Cloud Run: `.\deploy.bat`. See [docs/DEPLOYING.md](docs/DE
 
 ## 🟦 Google Cloud at the heart of the system
 
-FlowPulse isn't "an app that uses an API key." It's designed top-to-bottom as a Google-native workload. **14 Google services**, each wired in code:
+FlowPulse isn't "an app that uses an API key." It's designed top-to-bottom as a Google-native workload. **13 Google services**, each wired in code:
 
 ```mermaid
 flowchart TB
@@ -88,7 +88,6 @@ flowchart TB
     subgraph DATA ["Data + delivery"]
         direction LR
         FCM["Firebase Cloud<br/>Messaging v1"]
-        FIR["Firebase Hosting<br/>(alt path)"]
         BQ["BigQuery<br/>per-tick events"]
     end
 
@@ -122,7 +121,7 @@ flowchart TB
     BE --> IAM
 
     classDef g fill:#e0f2fe,stroke:#0284c7,color:#075985;
-    class ADK,GEM,VER,FCM,FIR,BQ,LOG,TRC,MON,CR,AR,CB,SM,IAM g;
+    class ADK,GEM,VER,FCM,BQ,LOG,TRC,MON,CR,AR,CB,SM,IAM g;
 ```
 
 ### Every Google service, what we use it for, and where it lives in the code
@@ -343,7 +342,7 @@ Full docs: [`.env.example`](.env.example), [`docs/SECURITY.md`](docs/SECURITY.md
 
 ## Further reading
 
-- **[VERIFICATION.md](VERIFICATION.md)** — 50 rubric-keyed claims, each with file citation + verify command + expected output. Start here if you're a judge.
+- **[VERIFICATION.md](VERIFICATION.md)** — 65 rubric-keyed claims, each with file citation + verify command + expected output. Start here if you're a judge.
 - **[AGENTS.md](AGENTS.md)** — machine-readable project map (tech stack, build commands, rubric alignment, permission boundaries)
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — components, data flow, scaling notes
 - [docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md) — Accessible Mode, Hindi locale, keyboard nav, screen-reader walkthrough

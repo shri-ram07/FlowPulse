@@ -29,8 +29,9 @@ Only the latest release line is actively supported:
 
 | Version | Supported |
 |---------|:---------:|
-| 1.1.x   | ✅ yes    |
-| 1.0.x   | ❌ upgrade to 1.1.x |
+| 1.2.x   | ✅ yes    |
+| 1.1.x   | ⚠️ critical fixes only — upgrade to 1.2.x |
+| 1.0.x   | ❌ upgrade to 1.2.x |
 
 ## Unauthenticated endpoints (by design)
 

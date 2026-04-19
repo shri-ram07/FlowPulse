@@ -6,6 +6,8 @@ staff-only routes, rate limiting, security headers, and attendee chat.
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -13,7 +15,7 @@ from backend.main import app
 
 
 @pytest.fixture
-def client() -> TestClient:
+def client() -> Iterator[TestClient]:
     # Use the app directly — lifespan kicks off the engine singleton.
     with TestClient(app) as c:
         yield c

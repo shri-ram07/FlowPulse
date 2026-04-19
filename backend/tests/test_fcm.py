@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -9,22 +11,25 @@ from backend.main import app
 
 
 @pytest.fixture
-def client():
+def client() -> Iterator[TestClient]:
     with TestClient(app) as c:
         yield c
 
 
-def _auth(client: TestClient) -> dict:
+def _auth(client: TestClient) -> dict[str, str]:
     r = client.post("/api/auth/login", data={"username": "ops", "password": "ops-demo"})
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
 
-def test_fcm_push_requires_auth(client: TestClient):
+def test_fcm_push_requires_auth(client: TestClient) -> None:
     r = client.post("/api/fcm/push", json={"zone_id": "food_1", "title": "Test", "body": "Hello"})
     assert r.status_code == 401
 
 
-def test_fcm_push_dry_run_when_project_missing(client: TestClient, monkeypatch):
+def test_fcm_push_dry_run_when_project_missing(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     # Missing project → dry-run regardless of credentials.
     monkeypatch.delenv("GOOGLE_CLOUD_PROJECT", raising=False)
     r = client.post(
@@ -45,7 +50,7 @@ def test_fcm_push_dry_run_when_project_missing(client: TestClient, monkeypatch):
     assert body["reason"] == "missing_project"
 
 
-def test_fcm_push_validates_input(client: TestClient):
+def test_fcm_push_validates_input(client: TestClient) -> None:
     r = client.post(
         "/api/fcm/push", headers=_auth(client), json={"zone_id": "", "title": "x", "body": "y"}
     )  # empty zone_id

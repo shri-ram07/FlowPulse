@@ -8,7 +8,7 @@ from backend.runtime import get_engine
 
 
 @pytest.mark.asyncio
-async def test_full_snapshot_contains_every_zone():
+async def test_full_snapshot_contains_every_zone() -> None:
     eng = get_engine()
     payload = eng.full_snapshot_payload()
     assert payload["type"] == "tick"
@@ -17,7 +17,7 @@ async def test_full_snapshot_contains_every_zone():
 
 
 @pytest.mark.asyncio
-async def test_diff_only_includes_changed_zones():
+async def test_diff_only_includes_changed_zones() -> None:
     eng = get_engine()
     # Prime the cache with a full snapshot so subsequent ticks are diffs.
     eng.full_snapshot_payload()
@@ -33,7 +33,7 @@ async def test_diff_only_includes_changed_zones():
 
 
 @pytest.mark.asyncio
-async def test_diff_empty_when_state_stable():
+async def test_diff_empty_when_state_stable() -> None:
     eng = get_engine()
     eng.full_snapshot_payload()
     # Two ticks with no state change should each have 0 zones in the diff.

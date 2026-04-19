@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from backend.agents.attendee_agent import ask_attendee, reset_attendee_session
-from backend.agents.operations_agent import propose_actions
+from backend.agents.orchestrator_agent import propose_actions
 from backend.security.auth import (
     RATE_LIMIT_AGENT_PER_MIN,
     RATE_LIMIT_FCM_PUSH_PER_MIN,

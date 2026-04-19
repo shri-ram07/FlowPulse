@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from backend.main import app
 
 
-def test_ws_emits_full_snapshot_on_connect():
+def test_ws_emits_full_snapshot_on_connect() -> None:
     client = TestClient(app)
     with client.websocket_connect("/ws") as ws:
         first = ws.receive_json()
@@ -16,7 +16,7 @@ def test_ws_emits_full_snapshot_on_connect():
         assert len(first["zones"]) >= 20
 
 
-def test_ws_ping_pong_round_trip():
+def test_ws_ping_pong_round_trip() -> None:
     client = TestClient(app)
     with client.websocket_connect("/ws") as ws:
         # Drain the initial full snapshot.
@@ -31,7 +31,7 @@ def test_ws_ping_pong_round_trip():
         raise AssertionError("did not receive pong within 5 frames")
 
 
-def test_ws_accepts_concurrent_clients():
+def test_ws_accepts_concurrent_clients() -> None:
     client1 = TestClient(app)
     client2 = TestClient(app)
     with client1.websocket_connect("/ws") as ws1, client2.websocket_connect("/ws") as ws2:

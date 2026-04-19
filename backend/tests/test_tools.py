@@ -1,12 +1,12 @@
 import pytest
 
 from backend.agents import tools
-from backend.agents.operations_agent import propose_actions
+from backend.agents.orchestrator_agent import propose_actions
 from backend.runtime import get_engine
 
 
 @pytest.mark.asyncio
-async def test_get_zone_state_returns_live_data():
+async def test_get_zone_state_returns_live_data() -> None:
     eng = get_engine()
     await eng.enter("food_1", 50)
     s = tools.get_zone_state("food_1")
@@ -15,20 +15,20 @@ async def test_get_zone_state_returns_live_data():
 
 
 @pytest.mark.asyncio
-async def test_get_all_zones_filters_by_kind():
+async def test_get_all_zones_filters_by_kind() -> None:
     zones = tools.get_all_zones(kind="food")
     assert zones and all(z["kind"] == "food" for z in zones)
 
 
 @pytest.mark.asyncio
-async def test_forecast_zone_shape():
+async def test_forecast_zone_shape() -> None:
     f = tools.forecast_zone("gate_a", horizon_minutes=3)
     for k in ("predicted_occupancy", "predicted_density", "predicted_score"):
         assert k in f
 
 
 @pytest.mark.asyncio
-async def test_suggest_redirect_reports_headroom():
+async def test_suggest_redirect_reports_headroom() -> None:
     eng = get_engine()
     await eng.enter("food_1", 170)  # > capacity
     r = tools.suggest_redirect("food_1", "food_6")
@@ -37,14 +37,14 @@ async def test_suggest_redirect_reports_headroom():
 
 
 @pytest.mark.asyncio
-async def test_dispatch_alert_registers_alert():
+async def test_dispatch_alert_registers_alert() -> None:
     r = tools.dispatch_alert("food_2", "test message", severity="warn")
     assert r["delivered"] is True
     assert any(a.zone_id == "food_2" for a in get_engine().alerts)
 
 
 @pytest.mark.asyncio
-async def test_ops_plan_is_grounded():
+async def test_ops_plan_is_grounded() -> None:
     # Create congestion so the plan should react.
     eng = get_engine()
     await eng.enter("food_2", int(eng.zones["food_2"].capacity * 1.05))

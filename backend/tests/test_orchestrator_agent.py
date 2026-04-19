@@ -23,7 +23,7 @@ from backend.runtime import get_engine
 
 
 @pytest.mark.asyncio
-async def test_safety_fallback_reports_shape():
+async def test_safety_fallback_reports_shape() -> None:
     report = fallback_safety()
     SafetyReport.model_validate(report)  # schema check
     assert "critical_count" in report
@@ -31,7 +31,7 @@ async def test_safety_fallback_reports_shape():
 
 
 @pytest.mark.asyncio
-async def test_forecast_fallback_respects_horizon_and_recommendation():
+async def test_forecast_fallback_respects_horizon_and_recommendation() -> None:
     r = fallback_forecast("food_1", horizon_minutes=3)
     ForecastReport.model_validate(r)
     assert r["horizon_minutes"] == 3
@@ -39,20 +39,20 @@ async def test_forecast_fallback_respects_horizon_and_recommendation():
 
 
 @pytest.mark.asyncio
-async def test_forecast_fallback_unknown_zone_returns_safe_default():
+async def test_forecast_fallback_unknown_zone_returns_safe_default() -> None:
     r = fallback_forecast("does_not_exist")
     assert r["predicted_score"] == 0
     assert r["recommendation"] == "monitor"
 
 
 @pytest.mark.asyncio
-async def test_routing_fallback_returns_error_when_no_zones_match():
+async def test_routing_fallback_returns_error_when_no_zones_match() -> None:
     r = fallback_route(kind="nonsense", start=None)
     assert r["error"]
 
 
 @pytest.mark.asyncio
-async def test_routing_fallback_with_start_computes_comfort_route():
+async def test_routing_fallback_with_start_computes_comfort_route() -> None:
     eng = get_engine()
     await eng.enter("food_1", 140)  # make food_1 unattractive
     r = fallback_route(kind="food", start="gate_a")
@@ -63,7 +63,7 @@ async def test_routing_fallback_with_start_computes_comfort_route():
 
 
 @pytest.mark.asyncio
-async def test_comms_fallback_has_required_fields():
+async def test_comms_fallback_has_required_fields() -> None:
     d = fallback_comms("food_2", channel="push", severity="warn", hint="Try Food Court 5 instead.")
     CommsDraft.model_validate(d)
     assert d["channel"] == "push"
@@ -75,7 +75,7 @@ async def test_comms_fallback_has_required_fields():
 
 
 @pytest.mark.asyncio
-async def test_deterministic_plan_calm_venue_emits_monitor():
+async def test_deterministic_plan_calm_venue_emits_monitor() -> None:
     plan_dict = _deterministic_plan().model_dump()
     OpsPlan.model_validate(plan_dict)
     assert plan_dict["actions"]
@@ -84,7 +84,7 @@ async def test_deterministic_plan_calm_venue_emits_monitor():
 
 
 @pytest.mark.asyncio
-async def test_deterministic_plan_with_hot_zone_proposes_push_notification():
+async def test_deterministic_plan_with_hot_zone_proposes_push_notification() -> None:
     """Saturating food_2 above capacity should cause SafetyAgent to flag it and
     the orchestrator to emit at least one push_notification action."""
     eng = get_engine()
@@ -100,7 +100,7 @@ async def test_deterministic_plan_with_hot_zone_proposes_push_notification():
 
 
 @pytest.mark.asyncio
-async def test_propose_actions_returns_serialisable_plan():
+async def test_propose_actions_returns_serialisable_plan() -> None:
     reply = await propose_actions()
     assert reply["engine"] in ("google-adk", "fallback")
     assert "situation" in reply and "root_cause" in reply
@@ -108,7 +108,7 @@ async def test_propose_actions_returns_serialisable_plan():
 
 
 @pytest.mark.asyncio
-async def test_agent_as_tool_callables_are_safe_to_invoke():
+async def test_agent_as_tool_callables_are_safe_to_invoke() -> None:
     # These are the Python functions the Orchestrator's ADK runner binds.
     s = call_safety_agent()
     assert "critical_count" in s

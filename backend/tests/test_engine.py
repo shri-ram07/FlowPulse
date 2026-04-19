@@ -4,7 +4,7 @@ from backend.runtime import get_engine
 
 
 @pytest.mark.asyncio
-async def test_enter_and_exit_balance():
+async def test_enter_and_exit_balance() -> None:
     eng = get_engine()
     await eng.enter("gate_a", 50)
     assert eng.zones["gate_a"].occupancy == 50
@@ -13,7 +13,7 @@ async def test_enter_and_exit_balance():
 
 
 @pytest.mark.asyncio
-async def test_move_preserves_headcount():
+async def test_move_preserves_headcount() -> None:
     eng = get_engine()
     await eng.enter("gate_a", 30)
     await eng.move("gate_a", "con_n", 20)
@@ -22,7 +22,7 @@ async def test_move_preserves_headcount():
 
 
 @pytest.mark.asyncio
-async def test_tick_updates_flow_rates():
+async def test_tick_updates_flow_rates() -> None:
     eng = get_engine()
     await eng.enter("gate_a", 40)
     payload = await eng.tick()
@@ -31,7 +31,7 @@ async def test_tick_updates_flow_rates():
 
 
 @pytest.mark.asyncio
-async def test_snapshot_shape():
+async def test_snapshot_shape() -> None:
     eng = get_engine()
     s = eng.snapshot("food_1")
     for key in ("id", "name", "kind", "capacity", "occupancy", "density", "score", "level", "x", "y"):

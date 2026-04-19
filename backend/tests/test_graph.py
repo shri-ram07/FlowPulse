@@ -5,14 +5,14 @@ from backend.runtime import get_engine
 
 
 @pytest.mark.asyncio
-async def test_route_direct_neighbour():
+async def test_route_direct_neighbour() -> None:
     r = tools.get_best_route("gate_a", "con_n", optimize="time")
     assert r["path"] == ["gate_a", "con_n"]
     assert r["eta_seconds"] == 40
 
 
 @pytest.mark.asyncio
-async def test_route_multi_hop():
+async def test_route_multi_hop() -> None:
     r = tools.get_best_route("gate_a", "food_2", optimize="time")
     assert r["path"][0] == "gate_a"
     assert r["path"][-1] == "food_2"
@@ -20,7 +20,7 @@ async def test_route_multi_hop():
 
 
 @pytest.mark.asyncio
-async def test_comfort_mode_avoids_congested_zone():
+async def test_comfort_mode_avoids_congested_zone() -> None:
     eng = get_engine()
     # Saturate con_n so comfort mode should prefer an alternative if one exists.
     await eng.enter("con_n", int(eng.zones["con_n"].capacity * 1.05))
@@ -31,6 +31,6 @@ async def test_comfort_mode_avoids_congested_zone():
     assert comfy["score_avg"] >= fast["score_avg"] - 1
 
 
-def test_unknown_zone_returns_error():
+def test_unknown_zone_returns_error() -> None:
     r = tools.get_best_route("nope", "food_1")
     assert r.get("error") == "unknown_zone"
