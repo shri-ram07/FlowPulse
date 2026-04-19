@@ -67,7 +67,7 @@ One-command deploy to Cloud Run: `.\deploy.bat`. See [docs/DEPLOYING.md](docs/DE
 
 ## 🟦 Google Cloud at the heart of the system
 
-FlowPulse isn't "an app that uses an API key." It's designed top-to-bottom as a Google-native workload. **13 Google services**, each wired in code:
+FlowPulse isn't "an app that uses an API key." It's designed top-to-bottom as a Google-native workload. **14 Google services**, each wired in code:
 
 ```mermaid
 flowchart TB
